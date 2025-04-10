@@ -14,7 +14,11 @@ interface Document {
   title: string;
   source_file: string;
   file_type: string;
+  category: 'global' | 'school-specific';
+  source?: string;
+  is_active: boolean;
   created_at: string;
+  last_updated: string;
 }
 
 export default function AdminPage() {
@@ -26,6 +30,8 @@ export default function AdminPage() {
   const [scholarships, setScholarships] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('documents');
+  const [documentCategory, setDocumentCategory] = useState<'global' | 'school-specific'>('school-specific');
+  const [documentSource, setDocumentSource] = useState('');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -47,8 +53,8 @@ export default function AdminPage() {
       // Fetch documents
       const { data: documentsData, error: documentsError } = await supabase
         .from('documents')
-        .select('id, title, source_file, file_type, created_at')
-        .order('created_at', { ascending: false });
+        .select('id, title, source_file, file_type, category, source, is_active, created_at, last_updated')
+        .order('last_updated', { ascending: false });
 
       if (documentsError) throw documentsError;
       setDocuments(documentsData || []);
@@ -92,6 +98,8 @@ export default function AdminPage() {
     try {
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('category', documentCategory);
+      formData.append('source', documentSource);
 
       const response = await fetch('/api/documents', {
         method: 'POST',
@@ -231,6 +239,35 @@ export default function AdminPage() {
                     </label>
                   </div>
 
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label htmlFor="category" className="text-sm font-medium">
+                        Document Category
+                      </label>
+                      <select
+                        id="category"
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        value={documentCategory}
+                        onChange={(e) => setDocumentCategory(e.target.value as 'global' | 'school-specific')}
+                      >
+                        <option value="school-specific">School-Specific</option>
+                        <option value="global">Global (Federal/State)</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label htmlFor="source" className="text-sm font-medium">
+                        Document Source
+                      </label>
+                      <Input
+                        id="source"
+                        placeholder="e.g., Federal, State, School"
+                        value={documentSource}
+                        onChange={(e) => setDocumentSource(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
                   <Button
                     type="submit"
                     disabled={!file || isUploading}
@@ -273,12 +310,21 @@ export default function AdminPage() {
                             <h4 className="font-medium">{doc.title}</h4>
                             <p className="text-sm text-muted-foreground">
                               Uploaded: {new Date(doc.created_at).toLocaleDateString()}
+                              {doc.source && ` • Source: ${doc.source}`}
                             </p>
                           </div>
-                          <div className="flex items-center">
+                          <div className="flex items-center space-x-2">
+                            <span className={`text-xs px-2 py-1 rounded-full ${doc.category === 'global' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                              {doc.category === 'global' ? 'Global' : 'School'}
+                            </span>
                             <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
                               {doc.file_type.toUpperCase()}
                             </span>
+                            {!doc.is_active && (
+                              <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">
+                                Inactive
+                              </span>
+                            )}
                           </div>
                         </div>
                       ))}

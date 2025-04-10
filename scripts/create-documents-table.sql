@@ -5,6 +5,10 @@ CREATE TABLE IF NOT EXISTS documents (
   content TEXT NOT NULL,
   source_file TEXT NOT NULL,
   file_type TEXT NOT NULL,
+  category TEXT NOT NULL DEFAULT 'school-specific', -- 'global' or 'school-specific'
+  source TEXT, -- e.g., 'federal', 'state', 'school'
+  is_active BOOLEAN DEFAULT true, -- to enable/disable documents without deleting
+  last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   metadata JSONB,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -17,9 +21,9 @@ CREATE TABLE IF NOT EXISTS documents (
 ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
 
 -- Create policy for public read access to documents
-CREATE POLICY "Public can read documents" 
+CREATE POLICY "Public can read documents"
 ON documents
-FOR SELECT 
+FOR SELECT
 TO anon
 USING (true);
 
