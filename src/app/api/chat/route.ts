@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { ChatCompletionMessageParam } from "openai/resources";
 import { Message } from "@/types";
 
 // Initialize OpenAI client
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Format messages for OpenAI API
-    const formattedMessages = [
+    const formattedMessages: ChatCompletionMessageParam[] = [
       { role: "system", content: SYSTEM_PROMPT },
       ...messages.map((msg: Message) => ({
         role: msg.role as "user" | "assistant" | "system",
@@ -88,28 +89,41 @@ export async function POST(request: NextRequest) {
       "Sorry, I could not generate a response.";
 
     return NextResponse.json({ content });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in chat API:", error);
 
     // Provide more specific error messages
     let errorMessage =
       "Sorry, there was an error processing your request. Please try again later.";
-    let statusCode = 500;
+    const statusCode = 500;
 
-    if (error.status === 401) {
-      errorMessage =
-        "Authentication error with the AI service. Please check your API key.";
-    } else if (error.status === 429) {
-      errorMessage =
-        "The AI service is currently experiencing high demand. Please try again later.";
-    } else if (error.status === 400) {
-      errorMessage =
-        "There was an issue with the request format. Please try a different question.";
+    // Type guard for OpenAI API errors
+    if (typeof error === "object" && error !== null) {
+      const apiError = error as { status?: number; message?: string };
+
+      if (apiError.status === 401) {
+        errorMessage =
+          "Authentication error with the AI service. Please check your API key.";
+      } else if (apiError.status === 429) {
+        errorMessage =
+          "The AI service is currently experiencing high demand. Please try again later.";
+      } else if (apiError.status === 400) {
+        errorMessage =
+          "There was an issue with the request format. Please try a different question.";
+      }
+
+      return NextResponse.json(
+        {
+          error: apiError.message || "Internal server error",
+          content: errorMessage,
+        },
+        { status: statusCode }
+      );
     }
 
     return NextResponse.json(
       {
-        error: error.message || "Internal server error",
+        error: "Internal server error",
         content: errorMessage,
       },
       { status: statusCode }

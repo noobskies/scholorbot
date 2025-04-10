@@ -1,24 +1,19 @@
 import { createClient } from "@supabase/supabase-js";
 import { Scholarship, ChatSession, Message } from "@/types";
-import { createMockSupabaseClient } from "./mockClient";
 
-// Check if Supabase credentials are available
+// Get Supabase credentials from environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
-// Create a mock or real Supabase client based on available credentials
-const hasSupabaseCredentials = supabaseUrl && supabaseAnonKey;
-
 // Initialize Supabase client
-export const supabase = hasSupabaseCredentials
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : createMockSupabaseClient();
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Scholarship data functions
 export async function getScholarships(query?: string): Promise<Scholarship[]> {
   try {
     let supabaseQuery = supabase.from("scholarships").select("*");
 
+    // Apply text search if query is provided
     if (query) {
       supabaseQuery = supabaseQuery.textSearch("description", query);
     }
@@ -26,7 +21,6 @@ export async function getScholarships(query?: string): Promise<Scholarship[]> {
     const { data, error } = await supabaseQuery;
 
     if (error) throw error;
-
     return data || [];
   } catch (error) {
     console.error("Error fetching scholarships:", error);

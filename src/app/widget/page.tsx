@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import ChatWidget from '@/components/widget/ChatWidget';
 
-export default function WidgetPage() {
+// Widget content component that uses useSearchParams
+function WidgetContent() {
   const searchParams = useSearchParams();
 
   // Get configuration from query parameters
@@ -14,7 +15,7 @@ export default function WidgetPage() {
 
   // Set up communication with parent window
   useEffect(() => {
-    const sendMessage = (message: any) => {
+    const sendMessage = (message: { type: string; width?: number; height?: number }) => {
       if (window.parent) {
         window.parent.postMessage(message, '*');
       }
@@ -41,12 +42,20 @@ export default function WidgetPage() {
   }, []);
 
   return (
+    <ChatWidget
+      title={title}
+      subtitle={subtitle}
+      position={position}
+    />
+  );
+}
+
+export default function WidgetPage() {
+  return (
     <div className="widget-container">
-      <ChatWidget
-        title={title}
-        subtitle={subtitle}
-        position={position}
-      />
+      <Suspense fallback={<div>Loading...</div>}>
+        <WidgetContent />
+      </Suspense>
     </div>
   );
 }

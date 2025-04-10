@@ -1,5 +1,5 @@
 import ChatWidget from "@/components/widget/ChatWidget";
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function Home() {
   return (
@@ -26,7 +26,7 @@ export default function Home() {
                 to understand student queries and provide relevant scholarship information.
               </p>
               <p>
-                The widget is customizable to match your school's branding and can be easily embedded
+                The widget is customizable to match your school&apos;s branding and can be easily embedded
                 on any website with a simple script tag.
               </p>
             </CardContent>
@@ -83,7 +83,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="bg-primary text-primary-foreground py-8">
         <div className="container mx-auto px-4 text-center">
-          <p>© {new Date().getFullYear()} Scholarship Chatbot. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Scholarship Chatbot. All rights reserved.</p>
         </div>
       </footer>
 
