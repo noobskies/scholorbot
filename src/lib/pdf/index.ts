@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
-// Import our simple PDF parser
+// Import our PDF parsers
 import extractTextFromPdf from "./simple-pdf-parser";
+import { parsePdfWithPdf2json } from "./pdf2json-parser";
 
 // Interface for document data
 export interface DocumentData {
@@ -29,25 +30,46 @@ export async function processPdf(buffer: Buffer): Promise<{
       throw new Error("Invalid or empty PDF buffer");
     }
 
-    // Use our simple PDF parser to extract text
-    const data = extractTextFromPdf(buffer) as {
-      text: string;
-      numpages: number;
-      numrender: number;
-      info: Record<string, unknown>;
-      metadata: Record<string, unknown>;
-      version: string;
-    };
+    // Use the pdf2json parser which works well in both server and client environments
+    try {
+      // Parse the PDF using pdf2json
+      const data = await parsePdfWithPdf2json(buffer);
 
-    return {
-      content: data.text || "No text content extracted",
-      metadata: {
-        pageCount: data.numpages || 0,
-        info: data.info || {},
-        metadata: data.metadata || {},
-        version: data.version || "",
-      },
-    };
+      return {
+        content: data.text || "No text content extracted",
+        metadata: {
+          pageCount: data.numpages || 0,
+          info: data.info || {},
+          metadata: data.metadata || {},
+          version: data.version || "",
+        },
+      };
+    } catch (pdfJsError) {
+      console.warn(
+        "Enhanced PDF parser failed, falling back to simple parser:",
+        pdfJsError
+      );
+
+      // Fall back to the simple parser if the enhanced parsers fail
+      const data = extractTextFromPdf(buffer) as {
+        text: string;
+        numpages: number;
+        numrender: number;
+        info: Record<string, unknown>;
+        metadata: Record<string, unknown>;
+        version: string;
+      };
+
+      return {
+        content: data.text || "No text content extracted",
+        metadata: {
+          pageCount: data.numpages || 0,
+          info: data.info || {},
+          metadata: data.metadata || {},
+          version: data.version || "",
+        },
+      };
+    }
   } catch (error) {
     console.error("Error extracting content from PDF:", error);
 
