@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { ChatCompletionMessageParam } from "openai/resources";
 import { Message } from "@/types";
+import { getRelevantDocumentContent } from "@/lib/pdf";
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -67,18 +68,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get the user's latest message
+    const userMessage = messages[messages.length - 1];
+
+    // Only search for relevant documents if this is a user message
+    let relevantDocumentContent = "";
+    if (userMessage && userMessage.role === "user") {
+      // Search for relevant document content based on the user's query
+      relevantDocumentContent = await getRelevantDocumentContent(
+        userMessage.content
+      );
+    }
+
     // Format messages for OpenAI API
     const formattedMessages: ChatCompletionMessageParam[] = [
       { role: "system", content: SYSTEM_PROMPT },
+    ];
+
+    // Add relevant document content if available
+    if (relevantDocumentContent) {
+      formattedMessages.push({
+        role: "system",
+        content: `Here is some relevant information about scholarships that might help answer the user's question:\n\n${relevantDocumentContent}\n\nPlease use this information to provide a helpful response to the user.`,
+      });
+    }
+
+    // Add the conversation history
+    formattedMessages.push(
       ...messages.map((msg: Message) => ({
         role: msg.role as "user" | "assistant" | "system",
         content: msg.content,
-      })),
-    ];
+      }))
+    );
 
     // Call OpenAI API
     const response = await openai.chat.completions.create({
-      model: "gpt-4-turbo", // Use a stable model
+      model: "gpt-3.5-turbo", // Use a stable model
       messages: formattedMessages,
       temperature: 0.7,
       max_tokens: 1000,
