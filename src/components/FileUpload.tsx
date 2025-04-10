@@ -9,19 +9,21 @@ import FilePondPluginFileValidateType from 'filepond-plugin-file-validate-type';
 registerPlugin(FilePondPluginFileValidateType);
 
 export default function FileUpload() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [files, setFiles] = useState<any[]>([]);
+  // Using any[] for FilePond files as they have a different type than standard File objects
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
 
   return (
     <div className="w-full max-w-2xl mx-auto">
       <h2 className="text-xl font-semibold mb-4">Upload PDF Document</h2>
-      
+
       {uploadStatus && (
         <div className="mb-4 p-4 bg-green-100 text-green-800 rounded">
           {uploadStatus}
         </div>
       )}
-      
+
       <FilePond
         files={files}
         onupdatefiles={setFiles}
@@ -38,7 +40,7 @@ export default function FileUpload() {
                   setTimeout(() => setUploadStatus(null), 5000);
                 }
                 return data.documentId;
-              } catch (e) {
+              } catch {
                 return response;
               }
             },

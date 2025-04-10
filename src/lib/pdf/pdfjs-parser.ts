@@ -6,6 +6,7 @@
 
 import * as pdfjsLib from "pdfjs-dist";
 import { TextItem } from "pdfjs-dist/types/src/display/api";
+import * as nodePath from "path";
 
 // Define interfaces for PDF parsing
 interface PdfParseOptions {
@@ -89,9 +90,7 @@ async function parsePdfWithPdfjs(
       // @ts-expect-error - disableWorker is a valid property but not in the types
       pdfjsLib.GlobalWorkerOptions.disableWorker = true;
 
-      // Use dynamic import for path to avoid issues with ESM/CJS
-      // @ts-expect-error - Using require in TypeScript
-      const nodePath = require("path");
+      // Use path module for server-side paths
       const standardFontDataUrl = nodePath.join(
         process.cwd(),
         "node_modules/pdfjs-dist/standard_fonts/"

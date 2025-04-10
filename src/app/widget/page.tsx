@@ -9,9 +9,9 @@ function WidgetContent() {
   const searchParams = useSearchParams();
 
   // Get configuration from query parameters
-  const title = searchParams.get('title') || undefined;
-  const subtitle = searchParams.get('subtitle') || undefined;
-  const position = searchParams.get('position') as 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' | undefined;
+  const title = searchParams?.get('title') || undefined;
+  const subtitle = searchParams?.get('subtitle') || undefined;
+  const position = searchParams?.get('position') as 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' | undefined;
 
   // Set up communication with parent window
   useEffect(() => {

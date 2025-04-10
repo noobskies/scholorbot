@@ -8,6 +8,18 @@ import { promises as fs } from "fs";
 import { v4 as uuidv4 } from "uuid";
 import path from "path";
 import os from "os";
+import { EventEmitter } from "events";
+
+// Define a proper interface for PDFParser
+interface PDFParserType extends EventEmitter {
+  loadPDF: (pdfFilePath: string) => void;
+  getRawTextContent: () => string;
+  data: {
+    Pages?: Array<unknown>;
+    Metadata?: Record<string, unknown>;
+    Info?: Record<string, unknown>;
+  };
+}
 
 interface PdfParseResult {
   text: string;
@@ -35,20 +47,29 @@ export async function parsePdfWithPdf2json(
 
     // Create a new PDF parser
     // Bypass type checking due to incorrect type definitions
-    const pdfParser = new (PDFParser as any)(null, 1);
+    // PDFParser constructor accepts null context and verbosity level
+    const pdfParser = new (PDFParser as unknown as {
+      new (context: null, verbosity: number): PDFParserType;
+    })(null, 1);
 
     // Parse the PDF file
     const parsedPdf = await new Promise<PdfParseResult>((resolve, reject) => {
       // Handle parsing errors
-      pdfParser.on("pdfParser_dataError", (errData: any) => {
-        reject(new Error(`PDF parsing error: ${errData.parserError}`));
-      });
+      pdfParser.on(
+        "pdfParser_dataError",
+        (errData: { parserError: string }) => {
+          reject(new Error(`PDF parsing error: ${errData.parserError}`));
+        }
+      );
 
       // Handle successful parsing
       pdfParser.on("pdfParser_dataReady", () => {
         try {
           // Get the raw text content
-          const rawText = (pdfParser as any).getRawTextContent();
+          // Type assertion for getRawTextContent method
+          const rawText = (
+            pdfParser as unknown as { getRawTextContent(): string }
+          ).getRawTextContent();
 
           // Get the number of pages
           const pageCount = pdfParser.data.Pages
