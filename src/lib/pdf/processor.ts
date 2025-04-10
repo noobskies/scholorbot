@@ -1,7 +1,7 @@
-import fs from 'fs';
-import path from 'path';
-import { createClient } from '@/lib/supabase';
-import pdfParse from 'pdf-parse';
+import fs from "fs";
+import path from "path";
+import { supabase } from "@/lib/supabase";
+import pdfParse from "pdf-parse";
 
 // Interface for document data
 interface DocumentData {
@@ -9,7 +9,7 @@ interface DocumentData {
   content: string;
   source_file: string;
   file_type: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, string | number | boolean | null>;
 }
 
 /**
@@ -33,20 +33,34 @@ export async function extractPdfContent(filePath: string): Promise<string> {
  * @param filePath Path to the PDF file
  * @returns Metadata object
  */
-export async function extractPdfMetadata(filePath: string): Promise<Record<string, any>> {
+interface PdfMetadata {
+  pageCount: number;
+  info: Record<string, string | number | boolean | null>;
+  metadata: Record<string, string | number | boolean | null>;
+  version: string;
+}
+
+export async function extractPdfMetadata(
+  filePath: string
+): Promise<PdfMetadata> {
   try {
     const dataBuffer = fs.readFileSync(filePath);
     const data = await pdfParse(dataBuffer);
-    
+
     return {
       pageCount: data.numpages,
       info: data.info,
       metadata: data.metadata,
-      version: data.version
+      version: data.version,
     };
   } catch (error) {
     console.error(`Error extracting metadata from PDF: ${filePath}`, error);
-    return {};
+    return {
+      pageCount: 0,
+      info: {},
+      metadata: {},
+      version: "",
+    };
   }
 }
 
@@ -60,36 +74,38 @@ export async function processPdfFile(filePath: string): Promise<string | null> {
     const fileName = path.basename(filePath);
     const content = await extractPdfContent(filePath);
     const metadata = await extractPdfMetadata(filePath);
-    
+
     // Generate a title from the filename
     const title = fileName
-      .replace(/\.[^/.]+$/, '') // Remove file extension
-      .replace(/[-_]/g, ' ')    // Replace hyphens and underscores with spaces
-      .replace(/([a-z])([A-Z])/g, '$1 $2') // Add space between camelCase
+      .replace(/\.[^/.]+$/, "") // Remove file extension
+      .replace(/[-_]/g, " ") // Replace hyphens and underscores with spaces
+      .replace(/([a-z])([A-Z])/g, "$1 $2") // Add space between camelCase
       .trim();
-    
+
     // Create document data
     const documentData: DocumentData = {
       title,
       content,
       source_file: fileName,
-      file_type: 'pdf',
-      metadata
+      file_type: "pdf",
+      metadata: metadata as unknown as Record<
+        string,
+        string | number | boolean | null
+      >,
     };
-    
+
     // Store in database
-    const supabase = await createClient();
     const { data, error } = await supabase
-      .from('documents')
+      .from("documents")
       .insert(documentData)
-      .select('id')
+      .select("id")
       .single();
-    
+
     if (error) {
-      console.error('Error storing document in database:', error);
+      console.error("Error storing document in database:", error);
       return null;
     }
-    
+
     console.log(`Successfully processed and stored PDF: ${fileName}`);
     return data.id;
   } catch (error) {
@@ -103,27 +119,34 @@ export async function processPdfFile(filePath: string): Promise<string | null> {
  * @param directoryPath Path to the directory containing PDF files
  * @returns Array of processed document IDs
  */
-export async function processAllPdfsInDirectory(directoryPath: string): Promise<string[]> {
+export async function processAllPdfsInDirectory(
+  directoryPath: string
+): Promise<string[]> {
   try {
     const files = fs.readdirSync(directoryPath);
-    const pdfFiles = files.filter(file => file.toLowerCase().endsWith('.pdf'));
-    
+    const pdfFiles = files.filter((file) =>
+      file.toLowerCase().endsWith(".pdf")
+    );
+
     console.log(`Found ${pdfFiles.length} PDF files in ${directoryPath}`);
-    
+
     const processedIds: string[] = [];
-    
+
     for (const pdfFile of pdfFiles) {
       const filePath = path.join(directoryPath, pdfFile);
       const id = await processPdfFile(filePath);
-      
+
       if (id) {
         processedIds.push(id);
       }
     }
-    
+
     return processedIds;
   } catch (error) {
-    console.error(`Error processing PDFs in directory: ${directoryPath}`, error);
+    console.error(
+      `Error processing PDFs in directory: ${directoryPath}`,
+      error
+    );
     return [];
   }
 }
@@ -133,28 +156,49 @@ export async function processAllPdfsInDirectory(directoryPath: string): Promise<
  * @param query Search query
  * @returns Array of matching documents
  */
-export async function searchDocuments(query: string): Promise<any[]> {
+interface SearchResult {
+  id: string;
+  title: string;
+  content: string;
+  source_file: string;
+  file_type: string;
+  created_at: string;
+  last_updated: string;
+  [key: string]: string | number | boolean | null;
+}
+
+export async function searchDocuments(query: string): Promise<SearchResult[]> {
   try {
-    const supabase = await createClient();
-    
+    // Use the supabase client
+
     // Use full-text search
     const { data, error } = await supabase
-      .from('documents')
-      .select('id, title, content')
-      .textSearch('content', query, {
-        type: 'plain',
-        config: 'english'
+      .from("documents")
+      .select("id, title, content")
+      .textSearch("content", query, {
+        type: "plain",
+        config: "english",
       })
       .limit(5);
-    
+
     if (error) {
-      console.error('Error searching documents:', error);
+      console.error("Error searching documents:", error);
       return [];
     }
-    
-    return data || [];
+
+    // Convert data to SearchResult type
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (data || []).map((item: any) => ({
+      id: item.id,
+      title: item.title,
+      content: item.content,
+      source_file: item.source_file || "",
+      file_type: item.file_type || "",
+      created_at: item.created_at || "",
+      last_updated: item.last_updated || "",
+    }));
   } catch (error) {
-    console.error('Error searching documents:', error);
+    console.error("Error searching documents:", error);
     return [];
   }
 }
@@ -164,37 +208,44 @@ export async function searchDocuments(query: string): Promise<any[]> {
  * @param query User query
  * @returns Relevant content from documents
  */
-export async function getRelevantDocumentContent(query: string): Promise<string> {
+export async function getRelevantDocumentContent(
+  query: string
+): Promise<string> {
   try {
     const documents = await searchDocuments(query);
-    
+
     if (documents.length === 0) {
-      return '';
+      return "";
     }
-    
+
     // Extract relevant sections from the documents
     // This is a simple implementation - could be enhanced with more sophisticated NLP
-    let relevantContent = '';
-    
+    let relevantContent = "";
+
     for (const doc of documents) {
       // Add document title
       relevantContent += `From "${doc.title}":\n\n`;
-      
+
       // Extract relevant paragraphs containing query terms
-      const queryTerms = query.toLowerCase().split(' ').filter(term => term.length > 3);
-      const paragraphs = doc.content.split('\n\n');
-      
-      const relevantParagraphs = paragraphs.filter(paragraph => {
-        const paragraphLower = paragraph.toLowerCase();
-        return queryTerms.some(term => paragraphLower.includes(term));
-      }).slice(0, 3); // Limit to 3 most relevant paragraphs
-      
-      relevantContent += relevantParagraphs.join('\n\n') + '\n\n';
+      const queryTerms = query
+        .toLowerCase()
+        .split(" ")
+        .filter((term) => term.length > 3);
+      const paragraphs = doc.content.split("\n\n");
+
+      const relevantParagraphs = paragraphs
+        .filter((paragraph) => {
+          const paragraphLower = paragraph.toLowerCase();
+          return queryTerms.some((term) => paragraphLower.includes(term));
+        })
+        .slice(0, 3); // Limit to 3 most relevant paragraphs
+
+      relevantContent += relevantParagraphs.join("\n\n") + "\n\n";
     }
-    
+
     return relevantContent.trim();
   } catch (error) {
-    console.error('Error getting relevant document content:', error);
-    return '';
+    console.error("Error getting relevant document content:", error);
+    return "";
   }
 }

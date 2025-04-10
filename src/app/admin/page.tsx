@@ -27,11 +27,28 @@ export default function AdminPage() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [scholarships, setScholarships] = useState<any[]>([]);
+  interface Scholarship {
+    id: string;
+    name: string;
+    description: string;
+    amount: number;
+    deadline: string;
+    organization?: string;
+    eligibility?: string;
+    is_active?: boolean;
+    created_at?: string;
+    [key: string]: string | number | boolean | undefined;
+  }
+
+  const [scholarships, setScholarships] = useState<Scholarship[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('documents');
   const [documentCategory, setDocumentCategory] = useState<'global' | 'school-specific'>('school-specific');
   const [documentSource, setDocumentSource] = useState('');
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [documentContent, setDocumentContent] = useState<string>('');
+  const [isViewingDocument, setIsViewingDocument] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -73,6 +90,75 @@ export default function AdminPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Function to view document content
+  const viewDocument = async (document: Document) => {
+    setIsViewingDocument(true);
+    setSelectedDocument(document);
+    setIsLoading(true);
+
+    try {
+      // Use the API endpoint to get the document content
+      const response = await fetch(`/api/documents/${document.id}`);
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to fetch document');
+      }
+
+      const data = await response.json();
+      setDocumentContent(data.content || 'No content available');
+    } catch (error) {
+      console.error('Error fetching document content:', error);
+      setError('Failed to fetch document content. Please try again.');
+      setDocumentContent('Error loading document content');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Function to delete a document
+  const deleteDocument = async (document: Document) => {
+    if (!confirm(`Are you sure you want to delete "${document.title}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      // Use the API endpoint to delete the document
+      const response = await fetch(`/api/documents/${document.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to delete document');
+      }
+
+      setMessage(`Document "${document.title}" deleted successfully`);
+      fetchData(); // Refresh the document list
+
+      // Close document viewer if the deleted document was being viewed
+      if (selectedDocument?.id === document.id) {
+        setIsViewingDocument(false);
+        setSelectedDocument(null);
+        setDocumentContent('');
+      }
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      setError('Failed to delete document. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Function to close document viewer
+  const closeDocumentViewer = () => {
+    setIsViewingDocument(false);
+    setSelectedDocument(null);
+    setDocumentContent('');
   };
 
   // Handle file upload for documents
@@ -305,26 +391,47 @@ export default function AdminPage() {
                   ) : documents.length > 0 ? (
                     <div className="border rounded-md divide-y">
                       {documents.map((doc) => (
-                        <div key={doc.id} className="p-4 flex justify-between items-center">
-                          <div>
-                            <h4 className="font-medium">{doc.title}</h4>
-                            <p className="text-sm text-muted-foreground">
-                              Uploaded: {new Date(doc.created_at).toLocaleDateString()}
-                              {doc.source && ` • Source: ${doc.source}`}
-                            </p>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <span className={`text-xs px-2 py-1 rounded-full ${doc.category === 'global' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
-                              {doc.category === 'global' ? 'Global' : 'School'}
-                            </span>
-                            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
-                              {doc.file_type.toUpperCase()}
-                            </span>
-                            {!doc.is_active && (
-                              <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">
-                                Inactive
+                        <div key={doc.id} className="p-4">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h4 className="font-medium">{doc.title}</h4>
+                              <p className="text-sm text-muted-foreground">
+                                Uploaded: {new Date(doc.created_at).toLocaleDateString()}
+                                {doc.source && ` • Source: ${doc.source}`}
+                              </p>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className={`text-xs px-2 py-1 rounded-full ${doc.category === 'global' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                                {doc.category === 'global' ? 'Global' : 'School'}
                               </span>
-                            )}
+                              <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                                {doc.file_type.toUpperCase()}
+                              </span>
+                              {!doc.is_active && (
+                                <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">
+                                  Inactive
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="mt-3 flex justify-end space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => viewDocument(doc)}
+                              className="text-xs"
+                            >
+                              View Content
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => deleteDocument(doc)}
+                              className="text-xs text-red-500 hover:text-red-700 hover:bg-red-50"
+                              disabled={isDeleting}
+                            >
+                              {isDeleting ? 'Deleting...' : 'Delete'}
+                            </Button>
                           </div>
                         </div>
                       ))}
@@ -434,6 +541,53 @@ export default function AdminPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Document Viewer Modal */}
+      {isViewingDocument && selectedDocument && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div className="p-4 border-b flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-semibold">{selectedDocument.title}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {selectedDocument.source_file} • {selectedDocument.category === 'global' ? 'Global' : 'School-Specific'}
+                  {selectedDocument.source && ` • Source: ${selectedDocument.source}`}
+                </p>
+              </div>
+              <Button variant="ghost" size="sm" onClick={closeDocumentViewer}>
+                ✕
+              </Button>
+            </div>
+            <div className="p-4 overflow-auto flex-grow">
+              {isLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : (
+                <div className="whitespace-pre-wrap font-mono text-sm bg-gray-50 p-4 rounded border">
+                  {documentContent}
+                </div>
+              )}
+            </div>
+            <div className="p-4 border-t flex justify-between">
+              <Button variant="outline" onClick={closeDocumentViewer}>
+                Close
+              </Button>
+              <Button
+                variant="outline"
+                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                onClick={() => {
+                  closeDocumentViewer();
+                  deleteDocument(selectedDocument);
+                }}
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete Document'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

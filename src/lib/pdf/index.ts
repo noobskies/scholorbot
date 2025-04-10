@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
-import pdfParse from "pdf-parse";
+// Import our simple PDF parser
+import extractTextFromPdf from "./simple-pdf-parser";
 
 // Interface for document data
 export interface DocumentData {
@@ -28,43 +29,15 @@ export async function processPdf(buffer: Buffer): Promise<{
       throw new Error("Invalid or empty PDF buffer");
     }
 
-    // Define custom render function to handle text extraction
-    const renderPage = function (pageData: unknown) {
-      const renderOptions = {
-        normalizeWhitespace: true,
-        disableCombineTextItems: false,
-      };
-
-      // Use type assertion to access getTextContent
-      return (pageData as any)
-        .getTextContent(renderOptions)
-        .then(function (textContent: {
-          items: Array<{ str: string; transform: number[] }>;
-        }) {
-          let lastY: number | undefined;
-          let text = "";
-
-          for (const item of textContent.items) {
-            if (lastY === item.transform[5] || lastY === undefined) {
-              text += item.str;
-            } else {
-              text += "\n" + item.str;
-            }
-            lastY = item.transform[5];
-          }
-          return text;
-        });
+    // Use our simple PDF parser to extract text
+    const data = extractTextFromPdf(buffer) as {
+      text: string;
+      numpages: number;
+      numrender: number;
+      info: Record<string, unknown>;
+      metadata: Record<string, unknown>;
+      version: string;
     };
-
-    // Process the PDF with options
-    const options = {
-      pagerender: renderPage,
-      max: 0, // Parse all pages
-      version: "v1.10.100", // Use a stable version
-    };
-
-    // Try to parse the PDF using the imported pdfParse
-    const data = await pdfParse(buffer, options);
 
     return {
       content: data.text || "No text content extracted",
@@ -94,7 +67,7 @@ export async function processPdf(buffer: Buffer): Promise<{
           version: "1.0",
         },
       };
-    } catch (_) {
+    } catch {
       // If even the fallback fails, throw the original error
       throw new Error(
         `Failed to extract content from PDF: ${
@@ -114,9 +87,15 @@ export async function storeDocument(
   documentData: DocumentData
 ): Promise<string> {
   try {
+    // Sanitize content to prevent Unicode escape sequence errors
+    const sanitizedData = {
+      ...documentData,
+      content: sanitizeText(documentData.content),
+    };
+
     const { data, error } = await supabase
       .from("documents")
-      .insert(documentData)
+      .insert(sanitizedData)
       .select("id")
       .single();
 
@@ -128,8 +107,31 @@ export async function storeDocument(
     return data.id;
   } catch (error) {
     console.error("Error storing document:", error);
-    throw new Error(`Failed to store document: ${error}`);
+    throw new Error(
+      `Failed to store document: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
   }
+}
+
+/**
+ * Sanitize text to prevent database errors
+ * @param text Text to sanitize
+ * @returns Sanitized text
+ */
+function sanitizeText(text: string): string {
+  return (
+    text
+      // Remove control characters
+      .replace(/[\x00-\x09\x0B-\x1F\x7F-\x9F]/g, "")
+      // Remove Unicode escape sequences
+      .replace(/\\u[0-9a-fA-F]{4}/g, "")
+      // Replace null bytes
+      .replace(/\0/g, "")
+      // Limit length to prevent database errors
+      .substring(0, 1000000)
+  );
 }
 
 /**
@@ -137,7 +139,9 @@ export async function storeDocument(
  * @param query Search query
  * @returns Array of matching documents
  */
-export async function searchDocuments(query: string): Promise<any[]> {
+export async function searchDocuments(
+  query: string
+): Promise<Array<{ id: string; title: string; content: string }>> {
   try {
     // Use full-text search
     const { data, error } = await supabase
@@ -192,7 +196,7 @@ export async function getRelevantDocumentContent(
       const paragraphs = doc.content.split("\n\n");
 
       const relevantParagraphs = paragraphs
-        .filter((paragraph) => {
+        .filter((paragraph: string) => {
           const paragraphLower = paragraph.toLowerCase();
           return queryTerms.some((term) => paragraphLower.includes(term));
         })
