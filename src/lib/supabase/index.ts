@@ -5,8 +5,62 @@ import { Scholarship, ChatSession, Message } from "@/types";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
-// Initialize Supabase client
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Initialize Supabase client with fetch configuration for better serverless compatibility
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: false, // Don't persist session in serverless environment
+  },
+  global: {
+    // Use custom fetch with longer timeout for serverless environments
+    fetch: async (
+      url: RequestInfo | URL,
+      options?: RequestInit
+    ): Promise<Response> => {
+      try {
+        // Create a controller for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+        // Handle the case where options already has a signal
+        const { signal: originalSignal, ...otherOptions } = options || {};
+
+        // If there's an original signal, we need to handle it
+        if (originalSignal && originalSignal.aborted) {
+          throw new Error("Original signal already aborted");
+        }
+
+        // Perform the fetch with our timeout signal
+        const response = await fetch(url, {
+          ...otherOptions,
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+        return response;
+      } catch (error) {
+        // Log detailed error information to help with debugging
+        console.error("Supabase fetch error:", {
+          url: typeof url === "string" ? url : "complex-url",
+          error:
+            error instanceof Error
+              ? {
+                  name: error.name,
+                  message: error.message,
+                  stack: error.stack,
+                }
+              : String(error),
+          environment: typeof window === "undefined" ? "server" : "client",
+        });
+
+        // Rethrow with more context
+        if (error instanceof Error) {
+          error.message = `Supabase fetch error: ${error.message}`;
+        }
+        throw error;
+      }
+    },
+  },
+});
 
 // Scholarship data functions
 export async function getScholarships(query?: string): Promise<Scholarship[]> {

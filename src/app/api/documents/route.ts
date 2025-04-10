@@ -36,17 +36,42 @@ export async function POST(request: NextRequest) {
       .replace(/([a-z])([A-Z])/g, "$1 $2") // Add space between camelCase
       .trim();
 
-    // Store document in database
-    const documentId = await storeDocument({
-      title,
-      content,
-      source_file: fileName,
-      file_type: "pdf",
-      category: category as "global" | "school-specific",
-      source,
-      is_active: true,
-      metadata,
-    });
+    // Store document in database with retry logic
+    let documentId;
+    let retryCount = 0;
+    const maxRetries = 3;
+
+    while (retryCount < maxRetries) {
+      try {
+        documentId = await storeDocument({
+          title,
+          content,
+          source_file: fileName,
+          file_type: "pdf",
+          category: category as "global" | "school-specific",
+          source,
+          is_active: true,
+          metadata,
+        });
+        break; // Success, exit the loop
+      } catch (error) {
+        retryCount++;
+        console.error(`Document storage attempt ${retryCount} failed:`, error);
+
+        if (retryCount >= maxRetries) {
+          throw new Error(
+            `Failed to store document after ${maxRetries} attempts: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        }
+
+        // Wait before retrying (exponential backoff)
+        await new Promise((resolve) =>
+          setTimeout(resolve, 1000 * Math.pow(2, retryCount))
+        );
+      }
+    }
 
     return NextResponse.json({
       message: "Document processed and stored successfully",
