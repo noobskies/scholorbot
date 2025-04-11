@@ -61,7 +61,8 @@ export async function generateDocumentSummary(
       max_tokens: 500,
     });
 
-    const summary = response.choices[0]?.message?.content || "No summary generated.";
+    const summary =
+      response.choices[0]?.message?.content || "No summary generated.";
 
     // Store the summary in the database
     await supabase
@@ -93,7 +94,7 @@ export async function extractScholarshipInfo(
     // Fetch the document
     const { data: document, error } = await supabase
       .from("documents")
-      .select("title, content")
+      .select("title, content, metadata")
       .eq("id", documentId)
       .single();
 
@@ -147,7 +148,7 @@ Format your response as a valid JSON object with these fields:
     });
 
     const extractedInfo = response.choices[0]?.message?.content;
-    
+
     if (!extractedInfo) {
       return null;
     }
@@ -211,14 +212,20 @@ export async function generateFollowUpQuestions(
     });
 
     const suggestedQuestions = response.choices[0]?.message?.content || "";
-    
+
     // Extract questions from the response
     const questions = suggestedQuestions
       .split(/\d+\.\s+/)
-      .filter(q => q.trim().length > 0 && q.trim().endsWith("?"))
-      .map(q => q.trim());
+      .filter((q) => q.trim().length > 0 && q.trim().endsWith("?"))
+      .map((q) => q.trim());
 
-    return questions.length > 0 ? questions : ["What specific eligibility requirements should I meet?", "When is the application deadline?", "How can I apply for this scholarship?"];
+    return questions.length > 0
+      ? questions
+      : [
+          "What specific eligibility requirements should I meet?",
+          "When is the application deadline?",
+          "How can I apply for this scholarship?",
+        ];
   } catch (error) {
     console.error("Error generating follow-up questions:", error);
     return [];

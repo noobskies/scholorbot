@@ -1,7 +1,11 @@
 import { processPdf } from "@/lib/pdf";
 import { storeDocumentWithEmbedding } from "./embeddings";
 import { chunkDocument } from "./document-chunker";
-import { extractScholarshipInfo, generateDocumentSummary } from "./document-analyzer";
+import {
+  extractScholarshipInfo,
+  generateDocumentSummary,
+  ScholarshipInfo,
+} from "./document-analyzer";
 import path from "path";
 
 /**
@@ -20,7 +24,7 @@ export async function processAndEnhancePdf(
   title: string;
   summary: string;
   chunkCount: number;
-  extractedInfo: any;
+  extractedInfo: ScholarshipInfo | null;
 }> {
   try {
     // Step 1: Extract text and metadata from PDF
@@ -28,8 +32,9 @@ export async function processAndEnhancePdf(
 
     // Step 2: Generate a title from the filename if not available in metadata
     let title = "";
-    if (metadata?.info?.Title) {
-      title = metadata.info.Title as string;
+    const info = (metadata?.info as Record<string, unknown>) || {};
+    if (info.Title) {
+      title = info.Title as string;
     } else {
       // Generate title from filename
       title = path
@@ -52,10 +57,10 @@ export async function processAndEnhancePdf(
     const [chunks, summary, scholarshipInfo] = await Promise.all([
       // Chunk the document and generate embeddings for each chunk
       chunkDocument(documentId),
-      
+
       // Generate a summary of the document
       generateDocumentSummary(documentId),
-      
+
       // Extract structured scholarship information
       extractScholarshipInfo(documentId),
     ]);

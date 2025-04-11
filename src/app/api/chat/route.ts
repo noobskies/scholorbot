@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     // Only search for relevant documents if this is a user message
     let relevantDocumentContent = "";
-    let documentIds: string[] = [];
+    const documentIds: string[] = [];
 
     if (userMessage && userMessage.role === "user") {
       console.log("Chat query:", userMessage.content);
@@ -197,12 +197,13 @@ export async function POST(request: NextRequest) {
           response.choices[0]?.message?.content ||
           "Sorry, I could not generate a response.",
       });
-    } catch (apiError: any) {
-      // Using any type for simplicity
+    } catch (apiError: unknown) {
+      // Using unknown type for catch clause
       console.error("OpenAI API error:", apiError);
 
       // Try again with a smaller context if we get a context length error
-      if (apiError.code === "context_length_exceeded") {
+      const error = apiError as { code?: string; message?: string };
+      if (error.code === "context_length_exceeded") {
         console.log(
           "Context length exceeded, retrying with reduced context..."
         );
@@ -240,9 +241,10 @@ export async function POST(request: NextRequest) {
       }
 
       // Handle other API errors
+      const errorObj = apiError as { message?: string };
       return NextResponse.json(
         {
-          error: apiError.message || "OpenAI API error",
+          error: errorObj.message || "OpenAI API error",
           content:
             "Sorry, I encountered an error while processing your request. Please try again with a more specific question.",
         },

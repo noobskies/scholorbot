@@ -16,8 +16,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// The dimension of the embeddings from OpenAI's text-embedding-3-small model
-const EMBEDDING_DIMENSION = 1536;
+// The dimension of the embeddings from OpenAI's text-embedding-3-small model is 1536
 
 /**
  * Generate embeddings for a text using OpenAI's embeddings API
