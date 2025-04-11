@@ -44,10 +44,10 @@ export default function ChatWindow({
 
   // Suggested questions
   const suggestedQuestions = [
-    "What scholarships are available for STEM students?",
-    "How do I apply for need-based scholarships?",
-    "When are most scholarship deadlines?",
-    "What scholarships are available for first-generation students?"
+    "Can you tell me about scholarships for STEM majors?",
+    "I'm worried about paying for college. What need-based options are there?",
+    "When should I start applying for scholarships for next fall?",
+    "I'm the first in my family to go to college. Are there scholarships for me?"
   ];
 
   const handleSuggestedQuestion = (question: string) => {

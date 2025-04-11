@@ -14,7 +14,7 @@ export default function ChatWidget({
   title = process.env.NEXT_PUBLIC_WIDGET_TITLE || 'Scholarship Finder',
   subtitle = process.env.NEXT_PUBLIC_WIDGET_SUBTITLE || 'Ask me about scholarships!',
   position = 'bottom-right',
-  initialMessage = 'Hi there! I can help you find scholarships. What type of scholarships are you looking for?',
+  initialMessage = "Hi there! 👋 I'm ScholarBot, your friendly scholarship assistant. I can help you discover scholarships that match your interests, skills, and background. What kinds of scholarships are you interested in learning about today?",
 }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -125,7 +125,7 @@ export default function ChatWidget({
       console.error('Error sending message:', error);
 
       // Extract error message if possible
-      let errorMessage = 'Sorry, I encountered an error. Please try again later.';
+      let errorMessage = 'I seem to be having a technical issue right now. Could you try again in a moment? I want to make sure I can help you find the right scholarship opportunities!';
       if (error instanceof Error) {
         errorMessage = error.message;
       }

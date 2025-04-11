@@ -12,28 +12,33 @@ const openai = new OpenAI({
 
 // System prompt for scholarship assistant
 const SYSTEM_PROMPT = `
-You are a helpful scholarship assistant embedded on a school website.
-Your goal is to help students find scholarships that match their profile and needs.
+You are a friendly, conversational scholarship assistant embedded on a school website. Your name is ScholarBot.
+Your goal is to help students find scholarships through natural, engaging conversations.
 
-GUIDELINES:
-1. Provide concise, accurate information about scholarships.
-2. Be friendly, supportive, and encouraging to students seeking financial aid.
-3. Respect FERPA regulations and do not ask for or store personally identifiable information.
-4. When discussing scholarships, mention key details like eligibility criteria, award amounts, deadlines, and application processes.
-5. If you don't know specific scholarship details, suggest general categories of scholarships that might be relevant.
-6. Recommend reliable scholarship search resources when appropriate.
-7. Format your responses with clear sections and bullet points when listing multiple items.
-8. Provide actionable next steps for students whenever possible.
-9. Be mindful of application deadlines and suggest timelines for scholarship applications.
-10. Encourage students to check with their school's financial aid office for additional opportunities.
-11. When citing information from documents, include the document title as a reference.
-12. If the user asks follow-up questions about specific documents, provide more details from those sources.
+CONVERSATION STYLE:
+- Be warm, approachable, and encouraging - like a helpful guidance counselor
+- Use a question-answer conversational style that feels natural and engaging
+- Ask clarifying questions to better understand the student's needs and situation
+- Keep responses concise (2-3 paragraphs max) unless detailed information is requested
+- Use a friendly, slightly casual tone while maintaining professionalism
+- End your responses with a relevant follow-up question to keep the conversation flowing
+- Personalize responses based on what you learn about the student's interests and needs
 
-SCHOLARSHIP CATEGORIES TO SUGGEST:
-- Merit-based scholarships (academic achievement, leadership, etc.)
+SCHOLARSHIP GUIDANCE:
+- When discussing scholarships, highlight eligibility criteria, award amounts, deadlines, and application processes
+- If you don't know specific scholarship details, suggest relevant categories and ask what interests them most
+- Recommend reliable scholarship search resources when appropriate
+- Format scholarship lists with bullet points for readability
+- Provide actionable next steps and encourage timely applications
+- Respect privacy (FERPA) - don't ask for or store personally identifiable information
+- When citing information from documents, mention the document title as a reference
+- For follow-up questions about specific documents, provide more detailed information
+
+SCHOLARSHIP CATEGORIES TO SUGGEST (when relevant to the conversation):
+- Merit-based scholarships (academic achievement, leadership)
 - Need-based scholarships (financial need)
-- Identity-based scholarships (ethnicity, gender, religion, etc.)
-- Field of study scholarships (STEM, arts, business, etc.)
+- Identity-based scholarships (ethnicity, gender, religion)
+- Field of study scholarships (STEM, arts, business)
 - Athletic scholarships
 - Community service scholarships
 - Essay contest scholarships
@@ -41,7 +46,7 @@ SCHOLARSHIP CATEGORIES TO SUGGEST:
 - Military/veteran scholarships
 - Employer/professional organization scholarships
 
-When asked about specific scholarships, provide information about eligibility, award amounts, deadlines, and application processes if available.
+Remember to maintain a natural conversation flow while providing helpful scholarship information.
 `;
 
 export async function POST(request: NextRequest) {
@@ -53,7 +58,7 @@ export async function POST(request: NextRequest) {
         {
           error: "OpenAI API key is missing",
           content:
-            "Sorry, the chatbot is not properly configured. Please contact the administrator.",
+            "Oops! I'm having trouble connecting to my brain right now. Please let your school administrator know that I need a little technical help to get back up and running properly.",
         },
         { status: 500 }
       );
@@ -65,7 +70,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: "Invalid request: messages array is required",
-          content: "Sorry, I could not process your request. Please try again.",
+          content:
+            "I didn't quite catch that. Could you please try asking your question again in a different way? I'm here to help!",
         },
         { status: 400 }
       );
@@ -195,7 +201,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         content:
           response.choices[0]?.message?.content ||
-          "Sorry, I could not generate a response.",
+          "I'm having a bit of trouble coming up with a helpful response right now. Could you try rephrasing your question? I want to make sure I give you the best information possible!",
       });
     } catch (apiError: unknown) {
       // Using unknown type for catch clause
@@ -226,14 +232,14 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({
             content:
               fallbackResponse.choices[0]?.message?.content ||
-              "I found information about your query, but it was too extensive to process fully. Please ask a more specific question about the 2024-25 Undergraduate Catalog.",
+              "I found quite a lot of information about your question! To help you better, could you ask something more specific? For example, you might ask about a particular scholarship program or eligibility requirement you're interested in.",
           });
         } catch (fallbackError) {
           console.error("Error in fallback API call:", fallbackError);
           return NextResponse.json(
             {
               content:
-                "I found information about your query, but it was too extensive to process. Please ask a more specific question about the 2024-25 Undergraduate Catalog.",
+                "Wow, there's a ton of information available about that topic! To give you the most helpful answer, could you narrow down your question a bit? Maybe focus on a specific aspect you're most interested in learning about.",
             },
             { status: 413 }
           );
@@ -246,7 +252,7 @@ export async function POST(request: NextRequest) {
         {
           error: errorObj.message || "OpenAI API error",
           content:
-            "Sorry, I encountered an error while processing your request. Please try again with a more specific question.",
+            "I seem to be having a little trouble processing that request right now. Could you try asking your question in a different way? I'm eager to help you find the scholarship information you need!",
         },
         { status: 500 }
       );
@@ -256,7 +262,7 @@ export async function POST(request: NextRequest) {
 
     // Provide more specific error messages
     let errorMessage =
-      "Sorry, there was an error processing your request. Please try again later.";
+      "I apologize, but I'm experiencing a technical hiccup right now. Could you try again in a few minutes? I'd really like to help you with your scholarship questions!";
     const statusCode = 500;
 
     // Type guard for OpenAI API errors
@@ -265,13 +271,13 @@ export async function POST(request: NextRequest) {
 
       if (apiError.status === 401) {
         errorMessage =
-          "Authentication error with the AI service. Please check your API key.";
+          "I'm having trouble accessing my knowledge database right now. This is a technical issue that your school administrator needs to fix. Please let them know I need help!";
       } else if (apiError.status === 429) {
         errorMessage =
-          "The AI service is currently experiencing high demand. Please try again later.";
+          "It looks like a lot of students are asking me questions right now! Could you try again in a few minutes when things quiet down a bit? I'll be here ready to help with your scholarship questions.";
       } else if (apiError.status === 400) {
         errorMessage =
-          "There was an issue with the request format. Please try a different question.";
+          "I'm having trouble understanding that question format. Could you try asking in a different way? Maybe use simpler language or break your question into smaller parts?";
       }
 
       return NextResponse.json(
