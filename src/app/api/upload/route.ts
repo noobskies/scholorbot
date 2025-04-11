@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { processPdf, storeDocument } from "@/lib/pdf";
+import { processPdf } from "@/lib/pdf";
+import { processAndEnhancePdf } from "@/lib/ai/pdf-processor";
 
 export async function POST(req: NextRequest) {
   try {
@@ -45,37 +46,76 @@ export async function POST(req: NextRequest) {
 
     // Convert file to buffer
     const buffer = Buffer.from(await uploadedFile.arrayBuffer());
-
-    // Process the PDF
-    const { content, metadata } = await processPdf(buffer);
-
-    // Generate a title from the filename
     const fileName = uploadedFile.name;
-    const title = fileName
-      .replace(/\.[^/.]+$/, "") // Remove file extension
-      .replace(/[-_]/g, " ") // Replace hyphens and underscores with spaces
-      .replace(/([a-z])([A-Z])/g, "$1 $2") // Add space between camelCase
-      .trim();
 
-    // Store the document in the database
-    const documentId = await storeDocument({
-      title,
-      content,
-      source_file: fileName,
-      file_type: "pdf",
-      category: "global",
-      is_active: true,
-      metadata,
-    });
+    // Try to use AI-enhanced processing with fallback to regular processing
+    try {
+      console.log("Starting AI-enhanced PDF processing...");
 
-    // Return success response
-    return NextResponse.json({
-      success: true,
-      documentId,
-      title,
-      contentLength: content.length,
-      fileName,
-    });
+      // Process the PDF with AI enhancements
+      const result = await processAndEnhancePdf(
+        buffer,
+        fileName,
+        "global" // Use global category for uploaded files
+      );
+
+      console.log("AI-enhanced processing complete:", {
+        documentId: result.documentId,
+        title: result.title,
+        chunkCount: result.chunkCount,
+        hasSummary: !!result.summary,
+      });
+
+      // Return success response with enhanced data
+      return NextResponse.json({
+        success: true,
+        documentId: result.documentId,
+        title: result.title,
+        summary: result.summary.substring(0, 100) + "...", // Send a preview of the summary
+        chunkCount: result.chunkCount,
+        enhanced: true,
+        fileName,
+      });
+    } catch (aiError) {
+      console.warn(
+        "AI-enhanced processing failed, falling back to standard processing:",
+        aiError
+      );
+
+      // Fall back to regular processing
+      const { content, metadata } = await processPdf(buffer);
+
+      // Generate a title from the filename
+      const title = fileName
+        .replace(/\.[^/.]+$/, "") // Remove file extension
+        .replace(/[-_]/g, " ") // Replace hyphens and underscores with spaces
+        .replace(/([a-z])([A-Z])/g, "$1 $2") // Add space between camelCase
+        .trim();
+
+      // Import storeDocument dynamically to avoid circular dependencies
+      const { storeDocument } = await import("@/lib/pdf");
+
+      // Store the document in the database
+      const documentId = await storeDocument({
+        title,
+        content,
+        source_file: fileName,
+        file_type: "pdf",
+        category: "global",
+        is_active: true,
+        metadata,
+      });
+
+      // Return success response
+      return NextResponse.json({
+        success: true,
+        documentId,
+        title,
+        contentLength: content.length,
+        fileName,
+        enhanced: false,
+      });
+    }
   } catch (error) {
     console.error("Error processing uploaded PDF:", error);
     return NextResponse.json(
