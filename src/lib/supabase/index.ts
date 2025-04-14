@@ -141,22 +141,29 @@ export async function saveUserProfile(
       return;
     }
 
+    // Define a type for our update data that can include metadata or user_profile
+    type SessionUpdateData = {
+      updated_at: number;
+      metadata?: Record<string, unknown>;
+      user_profile?: UserProfile;
+    };
+
     // Determine the best way to store the user profile based on the existing schema
-    const updateData: Record<string, unknown> = {
+    const updateData: SessionUpdateData = {
       updated_at: Date.now(),
     };
 
     // Check if metadata field exists and is an object
     if (sessionData.metadata && typeof sessionData.metadata === "object") {
       // Update existing metadata with user profile
-      (updateData as any).metadata = {
+      updateData.metadata = {
         ...(sessionData.metadata as Record<string, unknown>),
         user_profile: userProfile,
       };
     }
     // Check if user_profile field exists directly
     else if ("user_profile" in sessionData) {
-      (updateData as any).user_profile = userProfile;
+      updateData.user_profile = userProfile;
     }
     // If neither exists, try both approaches
     else {
