@@ -12,7 +12,7 @@ export default function Home() {
             <div className="bg-primary-foreground/10 p-3 rounded-full">
               <GraduationCap className="h-8 w-8 text-primary-foreground" />
             </div>
-            <h1 className="text-4xl font-bold">Scholarship Chatbot</h1>
+            <h1 className="text-4xl font-bold">Attribia</h1>
           </div>
           <p className="text-xl ml-16">
             A customizable AI chatbot widget to help students find scholarships
@@ -27,7 +27,7 @@ export default function Home() {
           <Card>
             <CardContent className="pt-6">
               <p className="mb-4">
-                The Scholarship Chatbot is an AI-powered widget that schools can embed on their websites
+                Attribia is an AI-powered widget that schools can embed on their websites
                 to help students find scholarships. The chatbot uses advanced natural language processing
                 to understand student queries and provide relevant scholarship information.
               </p>
@@ -44,14 +44,14 @@ export default function Home() {
           <Card>
             <CardContent className="pt-6">
               <p className="mb-4">
-                To embed the Scholarship Chatbot on your website, simply add the following script tag
+                To embed the Attribia widget on your website, simply add the following script tag
                 to your HTML:
               </p>
               <div className="bg-muted p-4 rounded-md overflow-x-auto mb-4">
                 <pre className="text-sm">
                   {`<script
   src="https://your-domain.com/widget-embed.js"
-  data-title="Scholarship Finder"
+  data-title="Attribia"
   data-subtitle="Ask me about scholarships!"
   data-position="bottom-right">
 </script>`}
@@ -74,7 +74,7 @@ export default function Home() {
           <Card>
             <CardContent className="pt-6">
               <p className="mb-4">
-                Try out the Scholarship Chatbot widget below:
+                Try out the Attribia widget below:
               </p>
               <div className="bg-muted p-6 rounded-md h-96 flex items-center justify-center">
                 <p className="text-muted-foreground">
@@ -91,9 +91,9 @@ export default function Home() {
         <div className="container mx-auto px-4 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
             <GraduationCap className="h-5 w-5 text-primary-foreground/80" />
-            <p className="font-semibold">Scholarship Chatbot</p>
+            <p className="font-semibold">Attribia</p>
           </div>
-          <p>&copy; {new Date().getFullYear()} Scholarship Chatbot. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Attribia. All rights reserved.</p>
         </div>
       </footer>
 

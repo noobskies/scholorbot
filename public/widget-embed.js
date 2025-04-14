@@ -1,7 +1,7 @@
 /**
- * Scholarship Chatbot Widget Embed Script
+ * Attribia Widget Embed Script
  *
- * This script can be added to any website to embed the scholarship chatbot widget.
+ * This script can be added to any website to embed the Attribia widget.
  *
  * Usage:
  * <script src="https://your-domain.com/widget-embed.js"
@@ -14,7 +14,7 @@
 (function() {
   // Create widget container
   const container = document.createElement('div');
-  container.id = 'scholarship-chatbot-widget';
+  container.id = 'attribia-widget';
   document.body.appendChild(container);
 
   // Get script element

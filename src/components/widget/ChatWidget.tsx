@@ -11,10 +11,10 @@ import { Message, ChatWidgetProps, Scholarship, UserProfile } from '@/types';
 import { createChatSession, saveChatMessage, getChatSession } from '@/lib/supabase';
 
 export default function ChatWidget({
-  title = process.env.NEXT_PUBLIC_WIDGET_TITLE || 'Scholarship Finder',
+  title = process.env.NEXT_PUBLIC_WIDGET_TITLE || 'Attribia',
   subtitle = process.env.NEXT_PUBLIC_WIDGET_SUBTITLE || 'Ask me about scholarships!',
   position = 'bottom-right',
-  initialMessage = "Hi there! 👋 I'm ScholarBot, your friendly scholarship assistant. I can help you discover scholarships, answer questions about financial aid, and provide information about college. What would you like to know about today?",
+  initialMessage = "Hi there! 👋 I'm Attribia, your friendly scholarship assistant. I can help you discover scholarships, answer questions about financial aid, and provide information about college. What would you like to know about today?",
 }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);

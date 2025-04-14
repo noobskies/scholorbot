@@ -1,4 +1,4 @@
-# Scholarship Chatbot Widget
+# Attribia
 
 A customizable AI-powered chatbot widget that helps students find scholarships. This widget can be embedded on school websites to provide an interactive way for students to discover scholarship opportunities.
 
@@ -32,7 +32,7 @@ NEXT_PUBLIC_SUPABASE_URL=your_supabase_url_here
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 
 # Widget Configuration
-NEXT_PUBLIC_WIDGET_TITLE="Scholarship Finder"
+NEXT_PUBLIC_WIDGET_TITLE="Attribia"
 NEXT_PUBLIC_WIDGET_SUBTITLE="Ask me about scholarships!"
 ```
 
@@ -76,12 +76,12 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ## Embedding the Widget
 
-To embed the Scholarship Chatbot on your website, add the following script tag to your HTML:
+To embed the Attribia widget on your website, add the following script tag to your HTML:
 
 ```html
 <script
   src="https://your-domain.com/widget-embed.js"
-  data-title="Scholarship Finder"
+  data-title="Attribia"
   data-subtitle="Ask me about scholarships!"
   data-primary-color="#4F46E5"
   data-position="bottom-right"
