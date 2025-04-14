@@ -6,17 +6,15 @@ import { extractScholarshipQuery } from '@/lib/openai';
 import { getScholarships } from '@/lib/supabase';
 import ChatBubble from './ChatBubble';
 import ChatWindow from './ChatWindow';
-import PreChatQuestionnaire from './PreChatQuestionnaire';
 
 import { Message, ChatWidgetProps, Scholarship, UserProfile } from '@/types';
-import { createChatSession, saveChatMessage, getChatSession, saveUserProfile } from '@/lib/supabase';
+import { createChatSession, saveChatMessage, getChatSession } from '@/lib/supabase';
 
 export default function ChatWidget({
   title = process.env.NEXT_PUBLIC_WIDGET_TITLE || 'Scholarship Finder',
   subtitle = process.env.NEXT_PUBLIC_WIDGET_SUBTITLE || 'Ask me about scholarships!',
   position = 'bottom-right',
-  initialMessage = "Hi there! 👋 I'm ScholarBot, your friendly scholarship assistant. I can help you discover scholarships that match your interests, skills, and background. What kinds of scholarships are you interested in learning about today?",
-  showPreChatQuestions = true,
+  initialMessage = "Hi there! 👋 I'm ScholarBot, your friendly scholarship assistant. I can help you discover scholarships, answer questions about financial aid, and provide information about college. What would you like to know about today?",
 }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -24,7 +22,6 @@ export default function ChatWidget({
   const [isLoading, setIsLoading] = useState(false);
   const [scholarships, setScholarships] = useState<Scholarship[]>([]);
   const [showScholarships, setShowScholarships] = useState(false);
-  const [showQuestionnaire, setShowQuestionnaire] = useState(showPreChatQuestions);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   // Initialize chat session
@@ -36,7 +33,6 @@ export default function ChatWidget({
         try {
           const parsedProfile = JSON.parse(storedUserProfile) as UserProfile;
           setUserProfile(parsedProfile);
-          setShowQuestionnaire(false); // Skip questionnaire if we already have a profile
         } catch (error) {
           console.error('Error parsing stored user profile:', error);
           localStorage.removeItem('userProfile'); // Remove invalid profile data
@@ -59,7 +55,6 @@ export default function ChatWidget({
           // If we don't have a profile from localStorage but have one from the session
           if (!storedUserProfile && session.userProfile) {
             setUserProfile(session.userProfile);
-            setShowQuestionnaire(false); // Skip questionnaire if we already have a profile
 
             // Save to localStorage for future page refreshes
             localStorage.setItem('userProfile', JSON.stringify(session.userProfile));
@@ -86,7 +81,7 @@ export default function ChatWidget({
     };
 
     initSession();
-  }, [initialMessage, showPreChatQuestions]);
+  }, [initialMessage]);
 
   const handleSendMessage = async (content: string) => {
     if (!content.trim()) return;
@@ -187,9 +182,6 @@ export default function ChatWidget({
     setUserProfile(null);
     localStorage.removeItem('userProfile');
 
-    // Show the questionnaire again
-    setShowQuestionnaire(true);
-
     // Add initial message
     const initialMsg: Message = {
       id: uuidv4(),
@@ -202,38 +194,6 @@ export default function ChatWidget({
     await saveChatMessage(newSessionId, initialMsg);
   };
 
-  // Handle completion of the pre-chat questionnaire
-  const handleQuestionnaireComplete = async (profile: UserProfile) => {
-    setUserProfile(profile);
-    setShowQuestionnaire(false);
-
-    // Save the user profile to localStorage for persistence across page refreshes
-    localStorage.setItem('userProfile', JSON.stringify(profile));
-
-    // Save the user profile to the session
-    if (sessionId) {
-      await saveUserProfile(sessionId, profile);
-    }
-
-    // Generate a personalized welcome message based on the profile
-    const welcomeMsg: Message = {
-      id: uuidv4(),
-      role: 'assistant',
-      content: `Thanks for sharing that information! I'll use these details to help find scholarships that match your ${profile.educationLevel} education level, ${profile.fieldOfStudy} field of study, and interests in ${profile.interests.join(', ')}. What specific questions do you have about scholarships?`,
-      timestamp: Date.now(),
-    };
-
-    setMessages(prev => prev.length > 0 ? [...prev, welcomeMsg] : [welcomeMsg]);
-    if (sessionId) {
-      await saveChatMessage(sessionId, welcomeMsg);
-    }
-  };
-
-  // Handle skipping the questionnaire
-  const handleSkipQuestionnaire = () => {
-    setShowQuestionnaire(false);
-  };
-
   return (
     <>
       <ChatBubble
@@ -241,14 +201,7 @@ export default function ChatWidget({
         isOpen={isOpen}
         position={position}
       />
-      {isOpen && showQuestionnaire && !userProfile ? (
-        <PreChatQuestionnaire
-          position={position}
-          onComplete={handleQuestionnaireComplete}
-          onSkip={handleSkipQuestionnaire}
-          title="Help us find the right scholarships for you"
-        />
-      ) : (
+      {isOpen && (
         <ChatWindow
           isOpen={isOpen}
           messages={messages}

@@ -12,17 +12,29 @@ const openai = new OpenAI({
 
 // System prompt for scholarship assistant
 const SYSTEM_PROMPT = `
-You are a friendly, conversational scholarship assistant embedded on a school website. Your name is ScholarBot.
-Your goal is to help students find scholarships through natural, engaging conversations.
+You are a professional and friendly university enrollment counselor chatbot.
 
-CONVERSATION STYLE:
-- Be warm, approachable, and encouraging - like a helpful guidance counselor
-- Use a question-answer conversational style that feels natural and engaging
-- Ask clarifying questions to better understand the student's needs and situation
-- Keep responses concise (2-3 paragraphs max) unless detailed information is requested
-- Use a friendly, slightly casual tone while maintaining professionalism
-- End your responses with a relevant follow-up question to keep the conversation flowing
-- Personalize responses based on what you learn about the student's interests and needs
+Your role is to:
+
+1. Help prospective students attend college in the most affordable and effective way.
+
+2. Assist current and prospective students by answering questions about the school.
+
+Only use the verified information provided to you. Do not make assumptions or fabricate answers.
+
+Use a short, conversational Q&A format—texting-length responses that are efficient, clear, and personable. Ask questions to learn about the student's background and goals, so you can offer helpful, tailored guidance.
+
+When financial aid or Pell Grants are discussed, explain how to apply (e.g., FAFSA), and always encourage students to complete the application—even if they believe they won't qualify.
+
+When discussing college affordability, consider these factors:
+- Dependency status
+- Tax filing status
+- Adjusted gross income
+- Family size
+- Marital status
+- Single parent status
+- State of residence
+- Ethnicity (when relevant)
 
 SCHOLARSHIP GUIDANCE:
 - When discussing scholarships, highlight eligibility criteria, award amounts, deadlines, and application processes
@@ -31,21 +43,6 @@ SCHOLARSHIP GUIDANCE:
 - Include direct links to scholarship websites or application pages using Markdown format: [Scholarship Name](URL)
 - Format scholarship lists with bullet points for readability
 - Provide actionable next steps and encourage timely applications
-- Respect privacy (FERPA) - don't ask for or store personally identifiable information
-- When citing information from documents, mention the document title as a reference
-- For follow-up questions about specific documents, provide more detailed information
-
-SCHOLARSHIP CATEGORIES TO SUGGEST (when relevant to the conversation):
-- Merit-based scholarships (academic achievement, leadership)
-- Need-based scholarships (financial need)
-- Identity-based scholarships (ethnicity, gender, religion)
-- Field of study scholarships (STEM, arts, business)
-- Athletic scholarships
-- Community service scholarships
-- Essay contest scholarships
-- First-generation student scholarships
-- Military/veteran scholarships
-- Employer/professional organization scholarships
 
 RECOMMENDED SCHOLARSHIP RESOURCES (include links to these when relevant):
 - [Federal Student Aid](https://studentaid.gov/understand-aid/types/scholarships)
@@ -54,10 +51,9 @@ RECOMMENDED SCHOLARSHIP RESOURCES (include links to these when relevant):
 - [Scholarships.com](https://www.scholarships.com/)
 - [Chegg Scholarships](https://www.chegg.com/scholarships)
 - [Niche Scholarships](https://www.niche.com/colleges/scholarships/)
-- [Bold.org](https://bold.org/)
-- [Cappex](https://www.cappex.com/)
+- [FAFSA](https://studentaid.gov/h/apply-for-aid/fafsa)
 
-Remember to maintain a natural conversation flow while providing helpful scholarship information.
+Your goal is to make students feel understood, supported, and empowered with the best options available to them.
 `;
 
 export async function POST(request: NextRequest) {
@@ -134,10 +130,31 @@ export async function POST(request: NextRequest) {
     if (userProfile) {
       const profilePrompt = `
 USER PROFILE INFORMATION:
-- Education Level: ${userProfile.educationLevel}
-- Field of Study: ${userProfile.fieldOfStudy}
-- Interests: ${userProfile.interests.join(", ")}
-- Financial Need: ${userProfile.financialNeed ? "Yes" : "No"}
+- Dependency Status: ${userProfile.dependencyStatus || "Not specified"}
+- Tax Filing Status: ${userProfile.taxFilingStatus || "Not specified"}
+- Adjusted Gross Income: ${userProfile.adjustedGrossIncome || "Not specified"}
+- Family Size: ${userProfile.familySize || "Not specified"}
+- State of Residence: ${userProfile.stateOfResidence || "Not specified"}
+${
+  userProfile.educationLevel
+    ? `- Education Level: ${userProfile.educationLevel}`
+    : ""
+}
+${
+  userProfile.fieldOfStudy
+    ? `- Field of Study: ${userProfile.fieldOfStudy}`
+    : ""
+}
+${
+  userProfile.interests && userProfile.interests.length > 0
+    ? `- Interests: ${userProfile.interests.join(", ")}`
+    : ""
+}
+${
+  userProfile.financialNeed !== undefined
+    ? `- Financial Need: ${userProfile.financialNeed ? "Yes" : "No"}`
+    : ""
+}
 ${
   userProfile.graduationYear
     ? `- Expected Graduation: ${userProfile.graduationYear}`
@@ -151,7 +168,7 @@ ${
     : ""
 }
 
-Use this information to personalize your responses and suggest scholarships that match the user's profile. Focus on their education level, field of study, and specific interests when recommending scholarships.`;
+Use this information to personalize your responses and suggest scholarships that match the user's profile. Focus on the 5 key factors (dependency status, tax filing status, adjusted gross income, family size, and state of residence) when recommending scholarships, as these are the biggest factors in determining eligibility.`;
 
       formattedMessages.push({
         role: "system",

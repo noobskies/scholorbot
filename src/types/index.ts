@@ -23,10 +23,15 @@ export interface Scholarship {
 
 // User Profile Types
 export interface UserProfile {
-  educationLevel: string; // e.g., "high school", "undergraduate", "graduate"
-  fieldOfStudy: string; // e.g., "Computer Science", "Biology", "Business"
-  interests: string[]; // e.g., ["STEM", "Arts", "Community Service"]
-  financialNeed: boolean; // Whether the user has financial need
+  dependencyStatus: string; // e.g., "Dependent", "Independent"
+  taxFilingStatus: string; // e.g., "Single", "Married Filing Jointly", "Head of Household"
+  adjustedGrossIncome: string; // Annual income
+  familySize: string; // Number of family members
+  stateOfResidence: string; // State where the student resides
+  educationLevel?: string; // e.g., "high school", "undergraduate", "graduate"
+  fieldOfStudy?: string; // e.g., "Computer Science", "Biology", "Business"
+  interests?: string[]; // e.g., ["STEM", "Arts", "Community Service"]
+  financialNeed?: boolean; // Whether the user has financial need
   demographics?: string[]; // Optional demographic information
   location?: string; // Optional location information
   gpa?: string; // Optional GPA information
@@ -49,7 +54,6 @@ export interface ChatWidgetProps {
   subtitle?: string;
   position?: "bottom-right" | "bottom-left" | "top-right" | "top-left";
   initialMessage?: string;
-  showPreChatQuestions?: boolean; // Whether to show pre-chat questions
 }
 
 // Session Types

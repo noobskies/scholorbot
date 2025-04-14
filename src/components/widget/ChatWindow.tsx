@@ -5,13 +5,14 @@ import remarkGfm from 'remark-gfm';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Message, Scholarship } from '@/types';
 import ScholarshipResult from './ScholarshipResult';
-import { SendIcon, Loader2, Trash2, GraduationCap } from 'lucide-react';
+import { SendIcon, Trash2, GraduationCap, Sparkles, Info, HelpCircle } from 'lucide-react';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ChatWindowProps {
   isOpen: boolean;
@@ -44,10 +45,12 @@ export default function ChatWindow({
 
   // Suggested questions
   const suggestedQuestions = [
-    "Can you tell me about scholarships for STEM majors?",
-    "I'm worried about paying for college. What need-based options are there?",
-    "When should I start applying for scholarships for next fall?",
-    "I'm the first in my family to go to college. Are there scholarships for me?"
+    "How can I apply for financial aid?",
+    "What scholarships are available for my major?",
+    "Can you tell me about Pell Grants?",
+    "How do I make college more affordable?",
+    "What's the difference between loans and scholarships?",
+    "I'm the first in my family to go to college. What resources are available?"
   ];
 
   const handleSuggestedQuestion = (question: string) => {
@@ -98,16 +101,41 @@ export default function ChatWindow({
             {/* Header */}
             <CardHeader className="p-4 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-md">
               <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <div className="bg-primary-foreground/10 p-2 rounded-full">
+                <div className="flex items-center gap-3">
+                  <div className="bg-primary-foreground/10 p-2 rounded-full shadow-inner">
                     <GraduationCap className="h-5 w-5 text-primary-foreground" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-lg tracking-tight">{title}</h3>
-                    <p className="text-sm text-primary-foreground/80">{subtitle}</p>
+                    <h3 className="font-bold text-lg tracking-tight flex items-center gap-2">
+                      {title}
+                      <motion.span
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.3 }}
+                      >
+                        <Sparkles className="h-4 w-4 text-yellow-300" />
+                      </motion.span>
+                    </h3>
+                    <p className="text-sm text-primary-foreground/90">{subtitle}</p>
                   </div>
                 </div>
-                <div className="flex items-center">
+                <div className="flex items-center gap-2">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground"
+                        >
+                          <HelpCircle className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="bg-background/95 backdrop-blur-sm border border-border/50 shadow-md">
+                        <p>Ask me about scholarships!</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                   {onClearChat && (
                     <Button
                       variant="outline"
@@ -116,7 +144,7 @@ export default function ChatWindow({
                       className="text-primary-foreground hover:text-primary-foreground/80 hover:bg-primary-foreground/10 border-primary-foreground/20 flex items-center gap-1"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
-                      <span>Clear Chat</span>
+                      <span>Clear</span>
                     </Button>
                   )}
                 </div>
@@ -128,29 +156,44 @@ export default function ChatWindow({
               <ScrollArea className="h-[350px] px-4 py-3 bg-gradient-to-b from-muted/30 to-transparent">
                 {/* Show suggested questions if no messages except the initial one */}
                 {messages.length <= 1 && (
-                  <div className="mb-6 bg-card p-3 rounded-lg border border-border/50 shadow-sm">
-                    <p className="text-sm font-medium mb-2">You can ask about:</p>
+                  <motion.div
+                    className="mb-6 bg-card p-4 rounded-lg border border-border/50 shadow-sm"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2, duration: 0.4 }}
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <Info className="h-4 w-4 text-primary" />
+                      <p className="text-sm font-medium">You can ask about:</p>
+                    </div>
                     <div className="flex flex-wrap gap-2">
                       {suggestedQuestions.map((question, index) => (
                         <Badge
                           key={index}
                           variant="secondary"
-                          className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors shadow-sm"
+                          className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors shadow-sm py-1.5 px-3"
                           onClick={() => handleSuggestedQuestion(question)}
                         >
                           {question}
                         </Badge>
                       ))}
                     </div>
-                  </div>
+                  </motion.div>
                 )}
 
                 {/* Show scholarship results if available */}
                 {showScholarships && scholarships.length > 0 && (
-                  <div className="mb-6 bg-card/50 p-3 rounded-lg border border-border/50 shadow-sm">
-                    <h4 className="text-sm font-medium mb-2 flex items-center">
-                      <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>
-                      Matching Scholarships:
+                  <motion.div
+                    className="mb-6 bg-card/50 p-4 rounded-lg border border-border/50 shadow-sm"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <h4 className="text-sm font-medium mb-3 flex items-center text-primary">
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-100 text-green-600 mr-2">
+                        <span className="text-xs font-bold">{scholarships.length}</span>
+                      </span>
+                      Matching Scholarships Found
                     </h4>
                     <div className="space-y-3">
                       {scholarships.map((scholarship) => (
@@ -160,19 +203,28 @@ export default function ChatWindow({
                         />
                       ))}
                     </div>
-                  </div>
+                  </motion.div>
                 )}
 
                 <div className="space-y-4">
-                  {messages.map((message) => (
-                    <div
+                  {messages.map((message, index) => (
+                    <motion.div
                       key={message.id}
                       className={`flex items-start gap-2 ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index === messages.length - 1 ? 0.1 : 0 }}
                     >
-                      <Avatar className={`h-8 w-8 ${message.role === 'user' ? 'bg-primary' : 'bg-muted'}`}>
-                        <AvatarFallback className={`${message.role === 'user' ? 'text-primary-foreground' : 'text-foreground'} text-xs font-semibold`}>
-                          {message.role === 'user' ? 'You' : 'AI'}
-                        </AvatarFallback>
+                      <Avatar className={`h-8 w-8 ${message.role === 'user' ? 'bg-primary' : 'bg-muted'} border ${message.role === 'user' ? 'border-primary/30' : 'border-muted/30'} shadow-sm`}>
+                        {message.role === 'user' ? (
+                          <AvatarFallback className="text-primary-foreground text-xs font-semibold">
+                            You
+                          </AvatarFallback>
+                        ) : (
+                          <AvatarFallback className="text-foreground text-xs font-semibold bg-gradient-to-br from-muted to-muted/80">
+                            <Sparkles className="h-4 w-4 text-primary" />
+                          </AvatarFallback>
+                        )}
                       </Avatar>
                       <div
                         className={`max-w-[80%] p-3 rounded-lg shadow-sm ${message.role === 'user'
@@ -199,22 +251,45 @@ export default function ChatWindow({
                           </ReactMarkdown>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
 
                   {/* Typing indicator */}
                   {isLoading && (
-                    <div className="flex items-start gap-2 flex-row">
-                      <Avatar className="h-8 w-8 bg-muted">
-                        <AvatarFallback className="text-foreground text-xs font-semibold">
-                          AI
+                    <motion.div
+                      className="flex items-start gap-2 flex-row"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <Avatar className="h-8 w-8 bg-muted border border-muted/30 shadow-sm">
+                        <AvatarFallback className="text-foreground text-xs font-semibold bg-gradient-to-br from-muted to-muted/80">
+                          <Sparkles className="h-4 w-4 text-primary" />
                         </AvatarFallback>
                       </Avatar>
-                      <div className="max-w-[80%] p-3 rounded-lg bg-card text-card-foreground rounded-tl-none border border-border/50 shadow-sm flex items-center space-x-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Thinking...</span>
+                      <div className="max-w-[80%] p-3 rounded-lg bg-card text-card-foreground rounded-tl-none border border-border/50 shadow-sm">
+                        <div className="flex items-center gap-2">
+                          <div className="flex space-x-1">
+                            <motion.span
+                              className="inline-block w-2 h-2 bg-primary/60 rounded-full"
+                              animate={{ scale: [0.5, 1, 0.5] }}
+                              transition={{ duration: 1.5, repeat: Infinity, delay: 0 }}
+                            />
+                            <motion.span
+                              className="inline-block w-2 h-2 bg-primary/60 rounded-full"
+                              animate={{ scale: [0.5, 1, 0.5] }}
+                              transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
+                            />
+                            <motion.span
+                              className="inline-block w-2 h-2 bg-primary/60 rounded-full"
+                              animate={{ scale: [0.5, 1, 0.5] }}
+                              transition={{ duration: 1.5, repeat: Infinity, delay: 0.4 }}
+                            />
+                          </div>
+                          <span className="text-sm text-muted-foreground">Thinking...</span>
+                        </div>
                       </div>
-                    </div>
+                    </motion.div>
                   )}
 
                   <div ref={messagesEndRef} />
@@ -231,9 +306,9 @@ export default function ChatWindow({
                     variant="ghost"
                     size="sm"
                     onClick={onClearChat}
-                    className="text-muted-foreground hover:text-foreground flex items-center gap-1 mb-1"
+                    className="text-muted-foreground hover:text-foreground flex items-center gap-1 mb-1 text-xs"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 className="h-3 w-3" />
                     <span>Clear conversation</span>
                   </Button>
                 </div>
@@ -246,7 +321,7 @@ export default function ChatWindow({
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Type your message..."
-                  className="flex-1 bg-background border-border focus-visible:ring-primary/50"
+                  className="flex-1 bg-background border-border focus-visible:ring-primary/50 shadow-sm"
                 />
                 <Button
                   type="submit"
