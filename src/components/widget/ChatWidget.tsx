@@ -30,6 +30,19 @@ export default function ChatWidget({
   // Initialize chat session
   useEffect(() => {
     const initSession = async () => {
+      // Check for existing user profile in localStorage first
+      const storedUserProfile = localStorage.getItem('userProfile');
+      if (storedUserProfile) {
+        try {
+          const parsedProfile = JSON.parse(storedUserProfile) as UserProfile;
+          setUserProfile(parsedProfile);
+          setShowQuestionnaire(false); // Skip questionnaire if we already have a profile
+        } catch (error) {
+          console.error('Error parsing stored user profile:', error);
+          localStorage.removeItem('userProfile'); // Remove invalid profile data
+        }
+      }
+
       // Check for existing session in localStorage
       const storedSessionId = localStorage.getItem('chatSessionId');
 
@@ -43,9 +56,13 @@ export default function ChatWidget({
             setMessages(session.messages);
           }
 
-          if (session.userProfile) {
+          // If we don't have a profile from localStorage but have one from the session
+          if (!storedUserProfile && session.userProfile) {
             setUserProfile(session.userProfile);
             setShowQuestionnaire(false); // Skip questionnaire if we already have a profile
+
+            // Save to localStorage for future page refreshes
+            localStorage.setItem('userProfile', JSON.stringify(session.userProfile));
           }
           return;
         }
@@ -166,6 +183,13 @@ export default function ChatWidget({
     setSessionId(newSessionId);
     localStorage.setItem('chatSessionId', newSessionId);
 
+    // Clear user profile from state and localStorage
+    setUserProfile(null);
+    localStorage.removeItem('userProfile');
+
+    // Show the questionnaire again
+    setShowQuestionnaire(true);
+
     // Add initial message
     const initialMsg: Message = {
       id: uuidv4(),
@@ -182,6 +206,9 @@ export default function ChatWidget({
   const handleQuestionnaireComplete = async (profile: UserProfile) => {
     setUserProfile(profile);
     setShowQuestionnaire(false);
+
+    // Save the user profile to localStorage for persistence across page refreshes
+    localStorage.setItem('userProfile', JSON.stringify(profile));
 
     // Save the user profile to the session
     if (sessionId) {

@@ -1,14 +1,20 @@
 import ChatWidget from "@/components/widget/ChatWidget";
 import { Card, CardContent } from "@/components/ui/card";
+import { GraduationCap } from "lucide-react";
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-primary text-primary-foreground py-12">
+      <header className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-12 shadow-md">
         <div className="container mx-auto px-4">
-          <h1 className="text-4xl font-bold mb-4">Scholarship Chatbot</h1>
-          <p className="text-xl">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="bg-primary-foreground/10 p-3 rounded-full">
+              <GraduationCap className="h-8 w-8 text-primary-foreground" />
+            </div>
+            <h1 className="text-4xl font-bold">Scholarship Chatbot</h1>
+          </div>
+          <p className="text-xl ml-16">
             A customizable AI chatbot widget to help students find scholarships
           </p>
         </div>
@@ -81,8 +87,12 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-primary text-primary-foreground py-8">
+      <footer className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-8 shadow-inner">
         <div className="container mx-auto px-4 text-center">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <GraduationCap className="h-5 w-5 text-primary-foreground/80" />
+            <p className="font-semibold">Scholarship Chatbot</p>
+          </div>
           <p>&copy; {new Date().getFullYear()} Scholarship Chatbot. All rights reserved.</p>
         </div>
       </footer>

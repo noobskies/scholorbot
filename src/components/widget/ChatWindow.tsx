@@ -5,7 +5,7 @@ import remarkGfm from 'remark-gfm';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Message, Scholarship } from '@/types';
 import ScholarshipResult from './ScholarshipResult';
-import { SendIcon, Loader2, Trash2 } from 'lucide-react';
+import { SendIcon, Loader2, Trash2, GraduationCap } from 'lucide-react';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -96,23 +96,30 @@ export default function ChatWindow({
         >
           <Card className="flex flex-col h-full shadow-xl border border-border/50 rounded-xl overflow-hidden bg-card/95 backdrop-blur-sm">
             {/* Header */}
-            <CardHeader className="p-4 bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-sm">
+            <CardHeader className="p-4 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-md">
               <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="font-bold text-lg tracking-tight">{title}</h3>
-                  <p className="text-sm text-primary-foreground/80">{subtitle}</p>
+                <div className="flex items-center gap-2">
+                  <div className="bg-primary-foreground/10 p-2 rounded-full">
+                    <GraduationCap className="h-5 w-5 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg tracking-tight">{title}</h3>
+                    <p className="text-sm text-primary-foreground/80">{subtitle}</p>
+                  </div>
                 </div>
-                {messages.length > 1 && onClearChat && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={onClearChat}
-                    className="text-primary-foreground hover:text-primary-foreground/80 hover:bg-primary-foreground/10"
-                    title="Clear chat"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
+                <div className="flex items-center">
+                  {onClearChat && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onClearChat}
+                      className="text-primary-foreground hover:text-primary-foreground/80 hover:bg-primary-foreground/10 border-primary-foreground/20 flex items-center gap-1"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      <span>Clear Chat</span>
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardHeader>
 
@@ -177,6 +184,16 @@ export default function ChatWindow({
                           <ReactMarkdown
                             rehypePlugins={[rehypeSanitize]}
                             remarkPlugins={[remarkGfm]}
+                            components={{
+                              a: ({ ...props }) => (
+                                <a
+                                  {...props}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary underline hover:text-primary/80 transition-colors"
+                                />
+                              )
+                            }}
                           >
                             {message.content}
                           </ReactMarkdown>
@@ -206,7 +223,22 @@ export default function ChatWindow({
             </CardContent>
 
             {/* Input */}
-            <CardFooter className="p-3 border-t bg-muted/30">
+            <CardFooter className="p-3 pt-2 border-t bg-muted/30 flex flex-col gap-2">
+              {/* Clear chat button */}
+              {onClearChat && messages.length > 1 && (
+                <div className="w-full flex justify-center">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onClearChat}
+                    className="text-muted-foreground hover:text-foreground flex items-center gap-1 mb-1"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>Clear conversation</span>
+                  </Button>
+                </div>
+              )}
+
               <form onSubmit={handleSubmit} className="flex w-full gap-2">
                 <Input
                   ref={inputRef}
