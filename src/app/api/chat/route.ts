@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { ChatCompletionMessageParam } from "openai/resources";
-import { Message } from "@/types";
+import { Message, UserProfile } from "@/types";
 import { getRelevantDocumentContent } from "@/lib/pdf";
 import { extractScholarshipInfo } from "@/lib/ai/document-analyzer";
 
@@ -64,7 +64,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { messages } = await request.json();
+    const { messages, userProfile } = (await request.json()) as {
+      messages: Message[];
+      userProfile?: UserProfile;
+    };
 
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json(
@@ -115,6 +118,35 @@ export async function POST(request: NextRequest) {
     const formattedMessages: ChatCompletionMessageParam[] = [
       { role: "system", content: SYSTEM_PROMPT },
     ];
+
+    // Add user profile information if available
+    if (userProfile) {
+      const profilePrompt = `
+USER PROFILE INFORMATION:
+- Education Level: ${userProfile.educationLevel}
+- Field of Study: ${userProfile.fieldOfStudy}
+- Interests: ${userProfile.interests.join(", ")}
+- Financial Need: ${userProfile.financialNeed ? "Yes" : "No"}
+${
+  userProfile.graduationYear
+    ? `- Expected Graduation: ${userProfile.graduationYear}`
+    : ""
+}
+${userProfile.gpa ? `- GPA: ${userProfile.gpa}` : ""}
+${userProfile.location ? `- Location: ${userProfile.location}` : ""}
+${
+  userProfile.demographics && userProfile.demographics.length > 0
+    ? `- Demographics: ${userProfile.demographics.join(", ")}`
+    : ""
+}
+
+Use this information to personalize your responses and suggest scholarships that match the user's profile. Focus on their education level, field of study, and specific interests when recommending scholarships.`;
+
+      formattedMessages.push({
+        role: "system",
+        content: profilePrompt,
+      });
+    }
 
     // Add relevant document content if available
     if (relevantDocumentContent) {

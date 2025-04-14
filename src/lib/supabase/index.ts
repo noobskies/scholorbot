@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { Scholarship, ChatSession, Message } from "@/types";
+import { Scholarship, ChatSession, Message, UserProfile } from "@/types";
 
 // Get Supabase credentials from environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -124,6 +124,27 @@ export async function saveChatMessage(
   }
 }
 
+export async function saveUserProfile(
+  sessionId: string,
+  userProfile: UserProfile
+): Promise<void> {
+  try {
+    // Update the session with the user profile
+    const { error } = await supabase
+      .from("chat_sessions")
+      .update({
+        user_profile: userProfile,
+        updated_at: Date.now(),
+      })
+      .eq("id", sessionId);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error("Error saving user profile:", error);
+    // Silently fail - profile will still be in local state
+  }
+}
+
 export async function getChatSession(
   sessionId: string
 ): Promise<ChatSession | null> {
@@ -151,6 +172,7 @@ export async function getChatSession(
       messages: messagesData || [],
       createdAt: sessionData.created_at,
       updatedAt: sessionData.updated_at,
+      userProfile: sessionData.user_profile || null,
     };
   } catch (error) {
     console.error("Error fetching chat session:", error);
