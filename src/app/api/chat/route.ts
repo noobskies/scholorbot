@@ -1,14 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
 import { ChatCompletionMessageParam } from "openai/resources";
 import { Message, UserProfile } from "@/types";
 import { getRelevantDocumentContent } from "@/lib/pdf";
 import { extractScholarshipInfo } from "@/lib/ai/document-analyzer";
-
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import openai from "@/lib/openai/client";
 
 // System prompt for scholarship assistant
 const SYSTEM_PROMPT = `

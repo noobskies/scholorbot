@@ -1,10 +1,5 @@
-import OpenAI from "openai";
 import { supabase } from "@/lib/supabase";
-
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import openai from "@/lib/openai/client";
 
 // Interface for scholarship information
 export interface ScholarshipInfo {

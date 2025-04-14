@@ -1,20 +1,5 @@
-import OpenAI from "openai";
-import { supabase } from "@/lib/supabase";
-import { createClient } from "@supabase/supabase-js";
-
-// Create a Supabase client with the service role key for admin operations
-// This bypasses RLS policies
-const adminSupabase = process.env.SUPABASE_SERVICE_ROLE_KEY
-  ? createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    )
-  : supabase; // Fall back to regular client if service role key is not available
-
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import adminSupabase from "@/lib/supabase/admin";
+import openai from "@/lib/openai/client";
 
 // The dimension of the embeddings from OpenAI's text-embedding-3-small model is 1536
 

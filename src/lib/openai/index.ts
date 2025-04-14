@@ -1,5 +1,5 @@
-import OpenAI from "openai";
 import { Message } from "@/types";
+import openai from "./client";
 
 // System prompt for scholarship assistant
 const SYSTEM_PROMPT = `
@@ -49,11 +49,6 @@ export async function generateChatResponse(
       console.warn("OpenAI API key is missing. Using mock response.");
       return getMockResponse(messages);
     }
-
-    // Initialize OpenAI client
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
 
     // Format messages for OpenAI API
     const formattedMessages = [

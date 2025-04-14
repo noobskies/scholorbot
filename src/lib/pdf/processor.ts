@@ -1,16 +1,11 @@
 import fs from "fs";
 import path from "path";
-import { supabase } from "@/lib/supabase";
-import pdfParse from "pdf-parse";
-
-// Interface for document data
-interface DocumentData {
-  title: string;
-  content: string;
-  source_file: string;
-  file_type: string;
-  metadata?: Record<string, string | number | boolean | null>;
-}
+import {
+  processPdf,
+  storeDocument,
+  DocumentData,
+  searchDocuments as searchDocsFromIndex,
+} from "./index";
 
 /**
  * Process a PDF file and extract its content
@@ -20,8 +15,8 @@ interface DocumentData {
 export async function extractPdfContent(filePath: string): Promise<string> {
   try {
     const dataBuffer = fs.readFileSync(filePath);
-    const data = await pdfParse(dataBuffer);
-    return data.text;
+    const result = await processPdf(dataBuffer);
+    return result.content;
   } catch (error) {
     console.error(`Error extracting content from PDF: ${filePath}`, error);
     throw new Error(`Failed to extract content from PDF: ${error}`);
@@ -35,8 +30,8 @@ export async function extractPdfContent(filePath: string): Promise<string> {
  */
 interface PdfMetadata {
   pageCount: number;
-  info: Record<string, string | number | boolean | null>;
-  metadata: Record<string, string | number | boolean | null>;
+  info: Record<string, unknown>;
+  metadata: Record<string, unknown>;
   version: string;
 }
 
@@ -45,13 +40,13 @@ export async function extractPdfMetadata(
 ): Promise<PdfMetadata> {
   try {
     const dataBuffer = fs.readFileSync(filePath);
-    const data = await pdfParse(dataBuffer);
+    const result = await processPdf(dataBuffer);
 
     return {
-      pageCount: data.numpages,
-      info: data.info,
-      metadata: data.metadata,
-      version: data.version,
+      pageCount: result.metadata.pageCount as number,
+      info: result.metadata.info as Record<string, unknown>,
+      metadata: result.metadata.metadata as Record<string, unknown>,
+      version: result.metadata.version as string,
     };
   } catch (error) {
     console.error(`Error extracting metadata from PDF: ${filePath}`, error);
@@ -72,8 +67,8 @@ export async function extractPdfMetadata(
 export async function processPdfFile(filePath: string): Promise<string | null> {
   try {
     const fileName = path.basename(filePath);
-    const content = await extractPdfContent(filePath);
-    const metadata = await extractPdfMetadata(filePath);
+    const dataBuffer = fs.readFileSync(filePath);
+    const { content, metadata } = await processPdf(dataBuffer);
 
     // Generate a title from the filename
     const title = fileName
@@ -88,26 +83,18 @@ export async function processPdfFile(filePath: string): Promise<string | null> {
       content,
       source_file: fileName,
       file_type: "pdf",
-      metadata: metadata as unknown as Record<
-        string,
-        string | number | boolean | null
-      >,
+      metadata,
     };
 
-    // Store in database
-    const { data, error } = await supabase
-      .from("documents")
-      .insert(documentData)
-      .select("id")
-      .single();
-
-    if (error) {
-      console.error("Error storing document in database:", error);
+    // Store in database using the centralized function
+    try {
+      const documentId = await storeDocument(documentData);
+      console.log(`Successfully processed and stored PDF: ${fileName}`);
+      return documentId;
+    } catch (storeError) {
+      console.error("Error storing document in database:", storeError);
       return null;
     }
-
-    console.log(`Successfully processed and stored PDF: ${fileName}`);
-    return data.id;
   } catch (error) {
     console.error(`Error processing PDF file: ${filePath}`, error);
     return null;
@@ -160,92 +147,25 @@ interface SearchResult {
   id: string;
   title: string;
   content: string;
-  source_file: string;
-  file_type: string;
-  created_at: string;
-  last_updated: string;
-  [key: string]: string | number | boolean | null;
+  source_file?: string;
+  file_type?: string;
+  created_at?: string;
+  last_updated?: string;
 }
 
+// Re-export the searchDocuments function from index.ts with our interface
 export async function searchDocuments(query: string): Promise<SearchResult[]> {
   try {
-    // Use the supabase client
+    const results = await searchDocsFromIndex(query);
 
-    // Use full-text search
-    const { data, error } = await supabase
-      .from("documents")
-      .select("id, title, content")
-      .textSearch("content", query, {
-        type: "plain",
-        config: "english",
-      })
-      .limit(5);
-
-    if (error) {
-      console.error("Error searching documents:", error);
-      return [];
-    }
-
-    // Convert data to SearchResult type
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (data || []).map((item: any) => ({
+    // Convert to our interface format
+    return results.map((item) => ({
       id: item.id,
       title: item.title,
       content: item.content,
-      source_file: item.source_file || "",
-      file_type: item.file_type || "",
-      created_at: item.created_at || "",
-      last_updated: item.last_updated || "",
     }));
   } catch (error) {
     console.error("Error searching documents:", error);
     return [];
-  }
-}
-
-/**
- * Get relevant document content for a specific query
- * @param query User query
- * @returns Relevant content from documents
- */
-export async function getRelevantDocumentContent(
-  query: string
-): Promise<string> {
-  try {
-    const documents = await searchDocuments(query);
-
-    if (documents.length === 0) {
-      return "";
-    }
-
-    // Extract relevant sections from the documents
-    // This is a simple implementation - could be enhanced with more sophisticated NLP
-    let relevantContent = "";
-
-    for (const doc of documents) {
-      // Add document title
-      relevantContent += `From "${doc.title}":\n\n`;
-
-      // Extract relevant paragraphs containing query terms
-      const queryTerms = query
-        .toLowerCase()
-        .split(" ")
-        .filter((term) => term.length > 3);
-      const paragraphs = doc.content.split("\n\n");
-
-      const relevantParagraphs = paragraphs
-        .filter((paragraph) => {
-          const paragraphLower = paragraph.toLowerCase();
-          return queryTerms.some((term) => paragraphLower.includes(term));
-        })
-        .slice(0, 3); // Limit to 3 most relevant paragraphs
-
-      relevantContent += relevantParagraphs.join("\n\n") + "\n\n";
-    }
-
-    return relevantContent.trim();
-  } catch (error) {
-    console.error("Error getting relevant document content:", error);
-    return "";
   }
 }
