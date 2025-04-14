@@ -99,7 +99,7 @@ function getMockResponse(messages: Message[]): string {
   } else if (query.includes("eligibility")) {
     return "Eligibility requirements really vary across different scholarships. Common criteria include things like academic achievement (GPA, test scores), financial need, field of study, extracurricular activities, and sometimes demographic factors or community involvement. Is there a specific type of eligibility requirement you're curious about? Or would you like me to help you find scholarships that might match your particular situation?";
   } else {
-    return "Hi there! I'm ScholarBot, and I'm here to help you navigate the world of scholarships and financial aid for your education. Whether you're looking for information about types of scholarships, application processes, deadlines, or eligibility requirements - I've got you covered! What would you like to know about today?";
+    return "Hi there! I'm Attribia, and I'm here to help you navigate the world of scholarships and financial aid for your education. Whether you're looking for information about types of scholarships, application processes, deadlines, or eligibility requirements - I've got you covered! What would you like to know about today?";
   }
 }
 
